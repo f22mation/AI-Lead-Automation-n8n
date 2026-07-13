@@ -104,11 +104,11 @@ The diagram below illustrates the logical flow of the Main Workflow, including t
 | (Inline Keyboard)|  |  | Gmail or    |
 +-------+--------+   |  | Telegram     |
         |            |  +------+------+
-+-------v--------+           |
-| Update Row      |    +-----v------+
-| (telegram_notif)|    | Update Row |
-+-----------------+    | (email_sent)|
-                       +------------+
++-------v--------+   |         |
+| Update Row      |   |  +------v------+
+| (telegram_notif)|   |  | Update Row  |
++-----------------+   |  | (email_sent) |
+                       +--+-----------+
 
 
 
