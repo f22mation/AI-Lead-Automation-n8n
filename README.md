@@ -29,89 +29,169 @@ The project consists of three n8n workflows:
 3. **Error Watcher Workflow** – Global error alerts via Telegram.
 
 The diagram below illustrates the logical flow of the Main Workflow, including the interplay with the Sweeper and external services.
+```
+                              +-------------------+
+                              |   Webhook (Site)  |
+                              +--------+----------+
+                                       |
+                              +--------v----------+
+                              |   Telegram Bot    |
+                              +--------+----------+
+                                       |
+                         +-------------v-------------+
+                         |   Merge & Normalization   |
+                         +-------------+-------------+
+                                       |
+                         +-------------v-------------+
+                         |   AI Agent (OpenAI)       |
+                         |   Fault-tolerant scoring  |
+                         +--------+--------+---------+
+                                  |        |
+                         success  |        | error / fallback
+                                  |        v
+                                  | +------+------+
+                                  | | Ai Failure  |
+                                  | | lead_score=-1
+                                  | +------+------+
+                                  |        |
+                         +---------v--------v---------+
+                         |      Priority & Cleanup    |
+                         +----------------+----------+
+                                          |
+                         +----------------v----------+
+                         |   Dedup Check (Sheets API)|
+                         +----------------+----------+
+                                          |
+                                     +----v----+
+                                     | New?    |
+                                     +----+----+
+                                          |
+                              Yes         |          No
+                         +-----v-----+    |    +-----v-----+
+                         | Append Row|    |    | Get Existing|
+                         +-----+-----+    |    +-----+-----+
+                               |          |          |
+                               +-----+----+-----+----+
+                                     |
+                         +-----------v-----------+
+                         |   IF VIP (budget>10k  |
+                         |        or score>80)   |
+                         +-----------+-----------+
+                                     |
+                       True          |          False
+                  +------v------+    |    +------v------+
+                  |  VIP Path   |    |    | Non-VIP Path|
+                  +------+------+    |    +------+------+
+                         |           |           |
+                +--------v--------+  |  +--------v--------+
+                | Get Row + Flag  |  |  | Get Row + Flag  |
+                | (telegram_notif)|  |  | (email_sent)    |
+                +--------+--------+  |  +--------+--------+
+                         |           |           |
+                    empty?           |      empty?
+                    +--v--+          |      +--v--+
+                    | Yes |          |      | Yes |
+                    +--+--+          |      +--+--+
+                       |             |         |
+                +------v-------+     |  +------v------+
+                | Loop & Wait   |     |  | Switch by   |
+                | (rate‑limit)  |     |  | source (Site |
+                +------+-------+     |  | / Telegram)  |
+                       |             |  +------+------+
+                +------v-------+     |         |
+                | Send Telegram |     |  +------v------+
+                | (Inline       |     |  | Gmail or    |
+                | Keyboard)     |     |  | Telegram     |
+                +------+-------+     |  +------+------+
+                       |             |         |
+                +------v-------+     |  +------v------+
+                | Update Row    |     |  | Update Row  |
+                | (telegram_notif)   |  | (email_sent) |
+                +-----------------+  |  +------+------+
+                                     |
+         +---------------------------+
+         |
+         |   (Callbacks & Sweeper below)
+         |
+         v
++-------------------+     +-------------------+
+| Telegram Callback |     |  Schedule Trigger |
+| Trigger           |     |  (Sweeper)        |
++--------+----------+     +---------+---------+
+         |                          |
+         |  +-----------+          |
+         |  | Answer     |          |
+         |  | Callback   |          |
+         |  | Query      |          |
+         |  +-----+-----+          |
+         |        |                |
+         |  +-----v-----+          |
+         |  | Update Row|          |
+         |  | (status)  |          |
+         |  +-----+-----+          |
+         |        |                |
+         |  +-----v-----+         |
+         |  | Get Row    |         |
+         |  +-----+-----+         |
+         |        |                |
+         |  +-----v-----+         |
+         |  | IF Approved|        |
+         |  +-----+-----+         |
+         |        |                |
+         |    Approved & not sent  |
+         |        |                |
+         |  +-----v-----+         |
+         |  | Switch by  |         |
+         |  | source     |         |
+         |  +--+-----+--+         |
+         |     |     |            |
+         |  Site Telegram         |
+         |     |     |            |
+         | +---v-+ +-v---+        |
+         | |Gmail| |Tele.|        |
+         | +--+--+ +--+--+        |
+         |    |       |           |
+         | +--v-------v--+        |
+         | | Update Row   |        |
+         | | (welcome_sent)|       |
+         | +--------------+        |
+         |                         |
+         v                         v
++-------------------+     +-------------------+
+| Edit Message      |     | HTTP Request      |
+| (Remove Keyboard) |     | (Read Sheet)      |
++-------------------+     +--------+----------+
+                                    |
+                          +---------v---------+
+                          | Code Node         |
+                          | (Filter & Decide) |
+                          +---------+---------+
+                                    |
+                          +---------v---------+
+                          | Loop Over Items   |
+                          +---------+---------+
+                                    |
+                          +---------v---------+
+                          | Switch (3 outputs)|
+                          +--+----+----+-----+
+                             |    |    |
+                      send_email |    send_welcome
+                                 |
+                           send_telegram
+                             |
+                    +--------v--------+
+                    | Send Telegram   |
+                    | or Gmail        |
+                    +--------+--------+
+                             |
+                    +--------v--------+
+                    | Update Row      |
+                    | (flag update)   |
+                    +-----------------+
 
 
-               +-------------------+
-               |   Webhook (Site)  |
-               +--------+----------+
-                        |
-               +--------v----------+
-               |   Telegram Bot    |
-               +--------+----------+
-                        |
-          +-------------v-------------+
-          |   Merge & Normalization   |
-          +-------------+-------------+
-                        |
-          +-------------v-------------+
-          |   AI Agent (OpenAI)       |
-          |   Fault-tolerant scoring  |
-          +--------+--------+---------+
-                   |        |
-          success  |        | error / fallback
-                   |        v
-                   | +------+------+
-                   | | Ai Failure  |
-                   | | lead_score=-1
-                   | +------+------+
-                   |        |
-          +---------v--------v---------+
-          |      Priority & Cleanup    |
-          +----------------+----------+
-                           |
-          +----------------v----------+
-          |   Dedup Check (Sheets API)|
-          +----------------+----------+
-                           |
-                      +----v----+
-                      | New?    |
-                      +----+----+
-                           |
-               Yes         |          No
-          +-----v-----+    |    +-----v-----+
-          | Append Row|    |    | Get Existing|
-          +-----+-----+    |    +-----+-----+
-                |          |          |
-                +-----+----+-----+----+
-                      |
-          +-----------v-----------+
-          |   IF VIP (budget>10k  |
-          |        or score>80)   |
-          +-----------+-----------+
-                      |
-        True          |          False
-   +------v------+    |    +------v------+
-   |  VIP Path   |    |    | Non-VIP Path|
-   +------+------+    |    +------+------+
-          |           |           |
-+---------v--------+  |  +--------v--------+
-| Get Row + Flag   |  |  | Get Row + Flag  |
-| (telegram_notif) |  |  | (email_sent)    |
-+---------+--------+  |  +--------+--------+
-          |           |           |
-     empty?           |      empty?
-     +--v--+          |      +--v--+
-     | Yes |          |      | Yes |
-     +--+--+          |      +--+--+
-        |             |         |
-+-------v--------+   |  +------v------+
-| Loop & Wait     |   |  | Switch by   |
-| (rate‑limit)    |   |  | source (Site |
-+-------+--------+   |  | / Telegram)  |
-        |            |  +------+------+
-+-------v--------+   |         |
-| Send Telegram   |  |  +------+------+
-| (Inline Keyboard)|  |  | Gmail or    |
-+-------+--------+   |  | Telegram     |
-        |            |  +------+------+
-+-------v--------+   |         |
-| Update Row      |   |  +------v------+
-| (telegram_notif)|   |  | Update Row  |
-+-----------------+   |  | (email_sent) |
-                       +--+-----------+
 
-
-
+```
 
 The **Sweeper** (scheduled every 5 minutes) scans the sheet for rows where `created_at` is older than 10 minutes and notification flags are still `empty` (or VIP leads stuck in `pending`), then re‑injects them into the appropriate notification path.
 
