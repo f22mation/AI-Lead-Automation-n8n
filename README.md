@@ -16,12 +16,12 @@ A complete, production-grade system that captures leads from **Web** and **Teleg
 ## 📸 See it in action
 
 <p align="center">
-  <img src="assets/workflow.png" width="45%" alt="n8n Workflow"/>
-  <img src="assets/telegram.png" width="45%" alt="Telegram Notification"/>
+  <img src="Callback source-aware 1.png" width="45%" alt="Telegram Callback"/>
+  <img src="Callback source-aware 2.png" width="45%" alt="Telegram Callback"/>
 </p>
 
 <p align="center">
-  <img src="assets/sheet.png" width="45%" alt="Google Sheet"/>
+  <img src="assets/Google Sheet" width="45%" alt="Google Sheet"/>
   <img src="assets/demo.gif" width="45%" alt="Demo GIF"/>
 </p>
 
