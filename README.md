@@ -29,7 +29,6 @@ The project consists of three n8n workflows:
 3. **Error Watcher Workflow** – Global error alerts via Telegram.
 
 The diagram below illustrates the logical flow of the Main Workflow, including the interplay with the Sweeper and external services.
-
                +-------------------+
                |   Webhook (Site)  |
                +--------+----------+
@@ -108,7 +107,6 @@ The diagram below illustrates the logical flow of the Main Workflow, including t
 | (telegram_notif)|    | Update Row |
 +-----------------+    | (email_sent)|
                        +------------+
-
 The **Sweeper** (scheduled every 5 minutes) scans the sheet for rows where `created_at` is older than 10 minutes and notification flags are still `empty` (or VIP leads stuck in `pending`), then re‑injects them into the appropriate notification path.
 
 ---
@@ -227,4 +225,3 @@ Before every notification action (in both main workflow and Sweeper), a row look
 ## License & Contact
 MIT License.  
 Built by **F22mation** – [GitHub](https://github.com/f22mation) | [LinkedIn](https://linkedin.com/in/f22mation) | [Linktree](https://linktr.ee/f22mation) | Email: f22mation@gmail.com
-                       
