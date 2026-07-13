@@ -22,7 +22,7 @@ A complete, production-grade system that captures leads from **Web** and **Teleg
   <img src="Sweeper pending.png" width="45%" alt="Telegram Callback"/>
   <img src="Callback source-aware 1.png" width="45%" alt="Telegram Callback"/>
   <img src="Callback source-aware 2.png" width="45%" alt="Telegram Callback"/>
-  <img src="Google Sheet" width="45%" alt="Google Sheet"/>
+  <img src="Google Sheet.png" width="45%" alt="Google Sheet"/>
 </p>
 
 <p align="center">
