@@ -51,6 +51,7 @@ A complete, production-grade system that captures leads from **Web** and **Teleg
 ---
 
 ## 🏗️ Architecture
+```
 
                          +-------------------+          +---------------------+
                          |   Webhook (Site)  |          |   Telegram Trigger  |
@@ -271,7 +272,7 @@ send_email             |             send_welcome
                  | Update Row      |
                  | (telegram_notif)|
                  +-----------------+
- 
+ ```
 ---
 
 ## 🛠️ Technologies
