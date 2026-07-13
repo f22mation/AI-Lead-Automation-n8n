@@ -1,84 +1,67 @@
-<!-- 1. HERO IMAGE -->
-![F22mation Lead Engine Banner](https://github.com/f22mation/AI-Lead-Automation-n8n/raw/main/assets/hero-banner.png) 
-*Note: If the banner image above does not load, please check the assets folder.*
 
-<!-- 2. TITLE -->
-# AI-Powered Lead Lifecycle Engine
+# AI Lead Automation System (F22mation)
 
-<!-- 3. SHORT SUMMARY -->
-A production-ready, self-healing enterprise automation system built on self-hosted n8n (Docker). This engine orchestrates the entire lifecycle of a business lead—handling multi-channel ingestion, intelligent AI qualification, real-time human-in-the-loop validation, and asynchronous follow-up loops. 
+A production-grade, self-healing Lead Management System built with n8n.
 
-Unlike fragile, basic automations, this system is architected to prioritize data integrity, survive API downtimes, and actively recover stalled operations without missing a single revenue opportunity.
-
----
-
-<!-- 4. WHY THIS PROJECT? (BUSINESS VALUE) -->
-## 🎯 Why This System Matters (Business Value)
-
-In high-volume sales operations, traditional automations fail quietly when networks blink or APIs hit rate limits. This system solves critical business leakage:
-* **Zero Lost Leads:** Bridges the gap between third-party webhooks and communication channels with robust fault-tolerance frameworks.
-* **API Failure Survival:** If OpenAI or your database drops, the system seamlessly logs the error state and processes the lead instead of crashing mid-way.
-* **Spam & Duplicate Protection:** Enforces strict state tracking to prevent sending duplicate notifications or charging your cloud/AI accounts for identical entries.
-* **Automated Data Recovery:** Features an asynchronous "Sweeper" routine that sweeps the database every few minutes to find, fix, and re-route leads stuck in limbo.
-
----
-
-<!-- 5. FEATURES -->
-## ⚡ Core Features
-
-* **✅ Omnichannel Ingestion:** Unified pipeline for both RESTful Webhooks and interactive Telegram bots.
-* **✅ AI Lead Scoring:** Dynamically evaluates, scores, and sanitizes incoming lead data using OpenAI GPT models.
-* **✅ Idempotency & Anti-Spam Gates:** Validates system status flags before any outbound message or email to block duplicate notifications.
-* **✅ Human-in-the-Loop Interactivity:** Interactive Telegram inline buttons allowing admins to approve or reject leads directly from their chats.
-* **✅ Concurrent State Locking:** Disables Telegram interface buttons instantly upon click to completely prevent race conditions.
-* **✅ Rate-Limit Mitigation:** Integrated intelligent delay loops ensuring high-volume execution safely clears Telegram API constraints.
-* **✅ Asynchronous Sweeper (Reconciliation):** An automated cron-based background system that captures and revives any pending leads older than 10 minutes.
-* **✅ Fault-Tolerant Error Catching:** Isolated fallback nodes protecting the main runtime pipeline from structural failure during API drops.
-
----
-
-<!-- 6. DEMO VIDEO & GIFS -->
-## 📺 Live Demo & Walkthrough
-
-### System Operation Demo (2-Minute Video)
-[![Watch the Demo Video](https://img.shields.io/badge/YouTube-Watch%20Video-red?style=for-the-badge&logo=youtube)]([لینک ویدیو یوتیوب یا آپارات خود را اینجا قرار دهید])
-
-### Desktop & Mobile Previews
-| Interactive Telegram Bot Approval | Google Sheets Synchronization |
-| :---: | :---: |
-| ![Telegram Demo](https://github.com/f22mation/AI-Lead-Automation-n8n/raw/main/assets/telegram-demo.gif) | ![Google Sheets Demo](https://github.com/f22mation/AI-Lead-Automation-n8n/raw/main/assets/sheets-demo.gif) |
-
----
-
-<!-- 7. ARCHITECTURE DIAGRAM -->
-## 🗺️ System Architecture
-
-This Mermaid diagram illustrates the automated data flow, state validation gates, and the background recovery loops:
+## System Architecture
 
 ```mermaid
-graph TD
-    %% Ingestion
-    A[Webhook Ingestion] -->|POST Payload| C[Normalization Gate]
-    B[Telegram Interface] -->|User Message| C
-    B -->|Acknowledge| B1[Instant UI Receipt Receipt]
-    
-    %% Processing & AI
-    C -->|Unified Stream| D[AI Scoring Agent]
-    D -->|Success| E[Priority Evaluation]
-    D -->|API Failure Fallback| D1[Error Logger Node]
-    D1 --> E
-    
-    %% Validation & DB
-    E --> F[Deduplication Check]
-    F -->|Unique Lead| G[Database Insertion]
-    F -->|Duplicate Lead| F1[Discard Stream]
-    G -->|Database Error Fallback| G1[Admin Crisis Notification]
-    
-    %% Routing Gates
-    G --> H{Priority Check}
-    H -->|VIP Lead| I[Idempotency Status Check]
-    H -->|Non-VIP Lead| J[State Flag Check]
-    
-    %% Sweeper Loop (Asynchronous)
-    K[Scheduled Sweeper Cron] -->|Fetch Pending > 10m| L[Time Logic Check]
-    L -->|Stuck State Detected| M[Re-Route Back to Admin Chat]
+flowchart LR
+    A[Webhook / Telegram] --> B[Merge & Normalize]
+    B --> C[AI Scoring (OpenAI)]
+    C --> D[Priority & Cleanup]
+    D --> E[Dedup Check (Sheets API)]
+    E --> F{New Lead?}
+    F -->|Yes| G[Append Row]
+    F -->|No| H[Get Existing Row]
+    G --> I[Route by VIP]
+    I --> J[VIP: Telegram to Admin]
+    I --> K[Non-VIP: Email / Telegram]
+    J --> L[Admin Callback]
+    L --> M[Update Status & Notify]
+    K --> N[Flag Updates]
+    M --> N
+    H --> I
+    O[Scheduler (Sweeper)] --> P[Recover Stuck Leads]
+    P --> I
+```
+
+Key Features
+
+· Omnichannel Input – Webhook (Site forms) and Telegram bot.
+· Deterministic Idempotency – Custom hash-based unique_id + Google Sheets API direct lookup prevents duplicate processing.
+· AI Lead Scoring – OpenAI integration with fault-tolerant fallback (lead_score = -1 on failure).
+· VIP Routing – High-budget (> 10000) or high-score (> 80) leads are sent to admin via Telegram with inline approval keyboard.
+· Stateful Flagging – Three notification flags (email_sent, telegram_notified, welcome_email_sent) guarantee exactly-once delivery.
+· Self-Healing Sweeper – Scheduled workflow that rescues leads stuck in pending state or missed notifications due to downtime/crashes. Respects race conditions via created_at timestamp (10‑minute delay). Re-sends pending VIP notifications after timeout.
+· Human-in-the-Loop – Inline keyboard approval, automatic button removal after decision, edited message confirmation.
+· Source-Aware Routing – Leads from Telegram receive Telegram confirmations; Webhook leads get emails. Uses source field and Switch node.
+· Error Watchdog – Separate Error Trigger workflow alerts admin on critical failures.
+
+Technologies & APIs
+
+· n8n (Self-hosted / Docker)
+· Google Sheets API (REST, OAuth2)
+· Telegram Bot API (Webhooks, Inline Keyboards, Message Editing)
+· OpenAI API (Chat Completions)
+· Gmail API (Sending emails)
+· Serveo (Public HTTPS tunnel for local development)
+
+Installation
+
+1. Import the workflow JSON files from this repo into n8n.
+2. Set up credentials:
+   · Google OAuth2 (Sheets, Gmail)
+   · Telegram Bot Token
+   · OpenAI API Key
+3. Expose your local n8n webhook URL using a tunnel (e.g., Serveo) and update the WEBHOOK_URL environment variable.
+4. Activate the main workflow, the Sweeper, and the Error Watcher.
+5. (Optional) Adjust Google Sheets columns as described in schema.md.
+
+Screenshots & Demo
+
+(Add your own screenshots and a short video link later)
+
+License
+
+MIT
