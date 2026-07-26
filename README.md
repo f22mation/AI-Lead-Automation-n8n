@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="hero.png" alt="F22mation - AI Lead Automation" width="600"/>
+  <img src="hero.png" alt="F22mation - AI Lead Automation" width="300"/>
 </p>
 
 <h1 align="center">AI Lead Automation System</h1>
